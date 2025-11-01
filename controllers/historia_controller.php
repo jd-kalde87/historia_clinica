@@ -26,10 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['rol']) || $_SESSI
  */
 $conexion = conectarDB();
 $conexion->autocommit(FALSE); // Desactivamos el autocommit para iniciar la transacción
+$id_cita_recibido = (int)($_POST['id_cita_a_completar'] ?? 0);
 
 // Variable para guardar el número de documento y usarlo en la redirección de error
-$numero_documento = ''; 
-
+$numero_documento = $conexion->real_escape_string(trim($_POST['numero_documento']));
+$id_cita_a_completar = (int)($_POST['id_cita_a_completar'] ?? 0);
 try {
     // --- LÓGICA PARA MANEJAR CAMPOS DE GESTACIÓN ---
     // Recogemos el valor de 'embarazada'. Si no existe, asumimos 0 (No).
@@ -187,8 +188,21 @@ try {
         }
         $stmt_medicamento->close();
     }
+    // 6. ACTUALIZAR EL ESTADO DE LA CITA (SI VIENE DE UNA)
+    // Verificamos si se pasó un ID de cita válido (mayor a 0)
+    if ($id_cita_a_completar > 0) {
+        $sql_update_cita = "UPDATE citas SET estado_cita = 'Completada' WHERE id_cita = ?";
+        $stmt_update_cita = $conexion->prepare($sql_update_cita);
+        $stmt_update_cita->bind_param("i", $id_cita_a_completar);
+        
+        // Ejecutamos la actualización.
+        // No lanzamos una excepción si falla, para no revertir la historia ya guardada.
+        // En un sistema más complejo, aquí se podría registrar un log de este error.
+        $stmt_update_cita->execute();
+        $stmt_update_cita->close();
+    }    
 
-    // --- 6. CONFIRMAR TRANSACCIÓN Y REDIRIGIR CON ÉXITO ---
+    // --- 7. CONFIRMAR TRANSACCIÓN Y REDIRIGIR CON ÉXITO ---
     // Si llegamos aquí sin errores, confirmamos todos los cambios en la base de datos.
     $conexion->commit();
     // Redirigimos al dashboard del médico mostrando un mensaje de éxito.
@@ -196,7 +210,7 @@ try {
     header('Location: ' . $redirect_url . '?status=success&msg=' . urlencode('Historia clínica guardada exitosamente. Código: ' . $codigo_historia));
 
 } catch (Exception $e) {
-    // --- 7. REVERTIR TRANSACCIÓN EN CASO DE ERROR ---
+    // --- 8. REVERTIR TRANSACCIÓN EN CASO DE ERROR ---
     // Si ocurrió cualquier error (Exception), revertimos todos los cambios hechos.
     $conexion->rollback();
     // Redirigimos de vuelta al formulario, manteniendo el documento del paciente
@@ -205,7 +219,7 @@ try {
     header('Location: ' . $redirect_url . '?documento=' . urlencode($numero_documento) . '&status=error&msg=' . urlencode('Error al guardar: ' . $e->getMessage()));
 
 } finally {
-    // --- 8. CERRAR CONEXIÓN Y SENTENCIAS PREPARADAS ---
+    // --- 9. CERRAR CONEXIÓN Y SENTENCIAS PREPARADAS ---
     // Aseguramos que todas las sentencias preparadas y la conexión se cierren
     // correctamente, sin importar si hubo éxito o error.
     if (isset($stmt_paciente_check) && $stmt_paciente_check instanceof mysqli_stmt) $stmt_paciente_check->close();

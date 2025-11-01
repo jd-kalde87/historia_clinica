@@ -9,6 +9,12 @@ if (isset($_GET['documento'])) {
     // Limpiamos el dato para seguridad
     $documento_url = htmlspecialchars(trim($_GET['documento']));
 }
+
+// 1. Capturamos el ID de la cita que viene de la URL
+$id_cita_url = 0; // Valor por defecto
+if (isset($_GET['id_cita'])) {
+    $id_cita_url = (int)$_GET['id_cita']; // Lo convertimos a entero
+}
 ?>
 
 <!-- =============================================== -->
@@ -34,7 +40,7 @@ if (isset($_GET['documento'])) {
                 
                 <!-- Campo oculto para pasar el número de documento si viene de la página de búsqueda -->
                 <input type="hidden" id="documento_a_cargar" value="<?php echo $documento_url; ?>">
-
+                <input type="hidden" name="id_cita_a_completar" value="<?php echo $id_cita_url; ?>">
                 <!-- =============================================== -->
                 <!--    TARJETA: INFORMACIÓN GENERAL DEL PACIENTE    -->
                 <!-- =============================================== -->
