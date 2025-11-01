@@ -86,5 +86,3 @@ El sistema está dividido en tres módulos principales según el rol del usuario
 7.  Acceder al sistema desde tu navegador en la `BASE_URL` (ej. `http://localhost/clinical_system/`).
 
 ---
-
-> _**Sugerencia:** ¡Considera añadir algunas capturas de pantalla de la agenda, el formulario de la historia clínica y el panel de administrador para que tu repositorio se vea aún más profesional!_
