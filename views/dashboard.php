@@ -20,6 +20,40 @@ $conexion->close();
 // --- FIN: LÓGICA PARA OBTENER ESTADÍSTICAS ---
 ?>
 
+<style>
+    .whatsapp-support-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #25D366; /* Color oficial de WhatsApp */
+        color: white;
+        padding: 12px 16px;
+        border-radius: 50px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        font-size: 16px;
+        font-weight: bold;
+        text-decoration: none;
+        z-index: 1000; /* Asegura que esté por encima de otros elementos */
+        display: flex;
+        align-items: center;
+    }
+    .whatsapp-support-button i {
+        font-size: 24px;
+        margin-right: 8px;
+    }
+    .whatsapp-support-button:hover {
+        background-color: #128C7E; /* Color más oscuro al pasar el mouse */
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<a href="https://wa.me/573185957439?text=Hola%2C%20necesito%20soporte%20t%C3%A9cnico%20con%20el%20software%20CLINIAX." 
+   class="whatsapp-support-button" 
+   target="_blank">
+    <i class="fab fa-whatsapp"></i>
+    Soporte Técnico
+</a>
 <div class="content-wrapper">
     <div class="content-header">
         <div class="container-fluid">
@@ -27,7 +61,9 @@ $conexion->close();
                 <div class="col-sm-6">
                     <h1 class="m-0">Dashboard Principal</h1>
                 </div>
-            </div></div></div>
+            </div>
+        </div>
+    </div>
     <div class="content">
         <div class="container-fluid">
 
@@ -40,8 +76,9 @@ $conexion->close();
                     </div>
                 </div>
             </div>
+
             <div class="row">
-                <div class="col-lg-3 col-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="small-box bg-info">
                         <div class="inner">
                             <h3>Iniciar Consulta</h3>
@@ -65,7 +102,7 @@ $conexion->close();
                     </div>
                 </div>
 
-                <div class="col-lg-3 col-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="small-box bg-success">
                         <div class="inner">
                             <h3>Ver Pacientes</h3>
@@ -78,7 +115,7 @@ $conexion->close();
                     </div>
                 </div>
 
-                <div class="col-lg-3 col-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="small-box bg-primary">
                         <div class="inner">
                             <h3><?php echo $total_pacientes; ?></h3>
@@ -91,7 +128,7 @@ $conexion->close();
                     </div>
                 </div>
 
-                <div class="col-lg-3 col-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="small-box bg-warning">
                         <div class="inner">
                             <h3><?php echo $consultas_mes; ?></h3>
@@ -104,8 +141,9 @@ $conexion->close();
                     </div>
                 </div>
             </div>
-            </div></div>
+            </div>
     </div>
+</div>
 <?php require_once 'includes/footer.php'; ?>
 
 <script>

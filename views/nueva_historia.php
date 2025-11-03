@@ -160,53 +160,20 @@ if (isset($_GET['id_cita'])) {
                 </div> <!-- /.card card-primary -->
 
                 <!-- =============================================== -->
-                <!--   TARJETA: INFORMACIÓN CLÍNICA DE LA CONSULTA   -->
-                <!-- =============================================== -->
-                <div class="card card-info">
-                    <div class="card-header">
-                        <h3 class="card-title">Información Clínica de la Consulta Actual</h3>
-                    </div>
-                    <div class="card-body">
-                         <div class="form-group">
-                            <label for="motivo_consulta">Motivo de consulta</label>
-                            <textarea class="form-control" rows="3" id="motivo_consulta" name="motivo_consulta"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="enfermedad_actual">Enfermedad actual</label>
-                            <textarea class="form-control" rows="3" id="enfermedad_actual" name="enfermedad_actual"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="antecedentes_personales">Antecedentes Patológicos Personales</label>
-                            <textarea class="form-control" rows="3" id="antecedentes_personales" name="antecedentes_personales"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="antecedentes_familiares">Antecedentes Patológicos Familiares</label>
-                            <textarea class="form-control" rows="3" id="antecedentes_familiares" name="antecedentes_familiares"></textarea>
-                        </div>
-                    </div><!-- /.card-body -->
-                </div><!-- /.card card-info -->
+                <!--          TARJETA: ANANMESIS -->
+                <!-- =============================================== -->               
+                <?php 
+                // Cargamos el componente del formulario de anamnesis
+                require_once 'includes/form_anamnesis.php'; 
+                ?>
 
                 <!-- =============================================== -->
-                <!--      TARJETA: SIGNOS VITALES Y ANTROPOMETRÍA    -->
-                <!-- =============================================== -->
-                <div class="card card-purple">
-                     <div class="card-header">
-                        <h3 class="card-title">Signos Vitales y Antropometría</h3>
-                    </div>
-                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3"><div class="form-group"><label for="peso_kg">Peso (kg)</label><input type="number" step="0.01" class="form-control" id="peso_kg" name="peso_kg"></div></div>
-                            <div class="col-md-3"><div class="form-group"><label for="talla_cm">Talla (cm)</label><input type="number" step="0.01" class="form-control" id="talla_cm" name="talla_cm"></div></div>
-                            <div class="col-md-3"><div class="form-group"><label for="imc">Índice de Masa Corporal (IMC)</label><input type="text" class="form-control" id="imc" name="imc" readonly></div></div>
-                            <div class="col-md-3"><div class="form-group"><label for="tension_arterial">Tensión Arterial (ej. 120/80)</label><input type="text" class="form-control" id="tension_arterial" name="tension_arterial"></div></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4"><div class="form-group"><label for="frecuencia_cardiaca">Frecuencia Cardíaca (lat/min)</label><input type="number" class="form-control" id="frecuencia_cardiaca" name="frecuencia_cardiaca"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label for="frecuencia_respiratoria">Frecuencia Respiratoria (resp/min)</label><input type="number" class="form-control" id="frecuencia_respiratoria" name="frecuencia_respiratoria"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label for="temperatura_c">Temperatura (°C)</label><input type="number" step="0.01" class="form-control" id="temperatura_c" name="temperatura_c"></div></div>
-                        </div>
-                    </div><!-- /.card-body -->
-                </div><!-- /.card card-purple -->             
+                <!--          TARJETA: SIGNOS VITALES Y ANTROPROMETRIA -->
+                <!-- =============================================== -->               
+                <?php 
+                // Cargamos el componente del formulario de signos vitales
+                require_once 'includes/form_signos_vitales.php'; 
+                ?>    
 
                 <!-- =============================================== -->
                 <!--          TARJETA: EXAMEN MÉDICO                 -->

@@ -2,7 +2,7 @@
     <div class="float-right d-none d-sm-inline">
       Versión 1.0
     </div>
-    <strong>Copyright &copy; 2024-<?php echo date('Y'); ?> CENTRO MEDICO MAJESTIC.</strong> Todos los derechos reservados.
+    <strong>Copyright &copy; 2024-<?php echo date('Y'); ?> JORGE DANIEL CALDERON Q.</strong> Todos los derechos reservados.
   </footer>
 </div>
 <script src="<?php echo BASE_URL; ?>assets/adminlte/plugins/jquery/jquery.min.js"></script>

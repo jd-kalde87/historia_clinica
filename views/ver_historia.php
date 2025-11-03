@@ -3,49 +3,97 @@
  * ===============================================
  * INCLUDES Y CONFIGURACIÓN INICIAL
  * ===============================================
- * Se incluyen los archivos necesarios para la cabecera, el menú lateral,
- * la conexión a la base de datos, funciones auxiliares y el modelo de datos.
  */
 require_once 'includes/header.php';
-require_once 'includes/sidebar.php'; // Asegúrate que sea el sidebar correcto (¿quizás sidebar_medico.php?)
+require_once 'includes/sidebar.php'; 
 require_once '../core/db_connection.php';
-require_once '../core/funciones.php'; // Necesario para calcularEdad y generarMensajeWhatsApp
-require_once '../models/consulta_model.php'; // Modelo que obtiene los datos
+require_once '../core/funciones.php'; 
+require_once '../models/consulta_model.php'; 
+
+/**
+ * ===============================================
+ * FUNCIONES HELPER PARA CLASIFICACIONES (NUEVO)
+ * ===============================================
+ * Estas funciones nos ayudan a colorear los 'badges'
+ */
+
+/**
+ * Devuelve la clase CSS de Bootstrap para un badge según el texto de clasificación.
+ * @param string $clasificacion_texto El texto guardado en la BD (ej. "Sobrepeso", "Hipertensión Grado 2")
+ * @return string La clase CSS (ej. "badge-warning", "badge-danger")
+ */
+function getBadgeClass($clasificacion_texto) {
+    if (empty($clasificacion_texto) || $clasificacion_texto == 'N/A') {
+        return 'badge-light text-dark'; // Gris claro si está vacío
+    }
+    
+    $texto = strtolower($clasificacion_texto);
+
+    // Búsqueda de términos de peligro (rojo)
+    if (strpos($texto, 'obesidad') !== false || strpos($texto, 'crisis') !== false || strpos($texto, 'grado 2') !== false || strpos($texto, 'grado 3') !== false || strpos($texto, 'severamente') !== false || strpos($texto, 'falla renal') !== false || strpos($texto, 'estadio g4') !== false || strpos($texto, 'estadio g5') !== false) {
+        return 'badge-danger';
+    }
+    
+    // Búsqueda de términos de advertencia (amarillo)
+    if (strpos($texto, 'sobrepeso') !== false || strpos($texto, 'elevada') !== false || strpos($texto, 'grado 1') !== false || strpos($texto, 'leve a moderadamente') !== false || strpos($texto, 'estadio g3') !== false) {
+        return 'badge-warning';
+    }
+    
+    // Búsqueda de términos de éxito (verde)
+    if (strpos($texto, 'normal') !== false || strpos($texto, 'levemente disminuido') !== false || strpos($texto, 'estadio g1') !== false || strpos($texto, 'estadio g2') !== false) {
+        return 'badge-success';
+    }
+
+    return 'badge-secondary'; // Un color por defecto si no coincide
+}
+
+/**
+ * Genera el texto de clasificación para TFG (basado en el valor numérico)
+ * @param float|null $tfg_valor
+ * @return string
+ */
+function getClasificacionTFGTexto($tfg_valor) {
+    if ($tfg_valor === null || $tfg_valor == 0) {
+        return 'N/A';
+    }
+    if ($tfg_valor >= 90) return 'Estadio G1 (>= 90)';
+    if ($tfg_valor >= 60) return 'Estadio G2 (60-89)';
+    if ($tfg_valor >= 45) return 'Estadio G3a (45-59)';
+    if ($tfg_valor >= 30) return 'Estadio G3b (30-44)';
+    if ($tfg_valor >= 15) return 'Estadio G4 (15-29)';
+    return 'Estadio G5 (< 15)';
+}
+// --- FIN DE FUNCIONES HELPER ---
+
 
 /**
  * ===============================================
  * VALIDACIÓN DEL ID DE HISTORIA
  * ===============================================
- * Se verifica que se haya recibido un parámetro 'id' por GET y que sea un número entero válido.
- * Si no es válido, se muestra un error y se detiene la ejecución.
  */
 if (!isset($_GET['id']) || !filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
     echo '<div class="content-wrapper"><section class="content"><div class="container-fluid"><div class="alert alert-danger mt-3">ID de consulta no válido.</div></div></section></div>';
     require_once 'includes/footer.php';
     exit();
 }
-$id_historia = (int)$_GET['id']; // Se convierte a entero por seguridad.
+$id_historia = (int)$_GET['id']; 
 
 /**
  * ===============================================
  * OBTENCIÓN DE DATOS DE LA CONSULTA
  * ===============================================
- * Se utiliza la función 'obtenerDetallesConsulta' del modelo para traer toda la información
- * relacionada con la historia clínica solicitada (datos del paciente, médico, consulta,
- * medicamentos recetados y archivos adjuntos).
  */
 $conexion = conectarDB();
-$datos = obtenerDetallesConsulta($conexion, $id_historia);
+// Asumimos que obtenerDetallesConsulta trae todas las columnas de 'historias_clinicas'
+$datos = obtenerDetallesConsulta($conexion, $id_historia); 
 $conexion->close();
 
-// Si la consulta no devuelve datos, significa que la historia no existe.
 if (!$datos) {
     echo '<div class="content-wrapper"><section class="content"><div class="container-fluid"><div class="alert alert-warning mt-3">No se encontró la consulta solicitada.</div></div></section></div>';
     require_once 'includes/footer.php';
     exit();
 }
 
-// Se extraen los datos en variables separadas para facilitar su uso en el HTML.
 $consulta = $datos['consulta'];
 $medicamentos = $datos['medicamentos'];
 $archivos = $datos['archivos'];
@@ -54,14 +102,8 @@ $archivos = $datos['archivos'];
  * ===============================================
  * LÓGICA PARA EL MENSAJE DE WHATSAPP
  * ===============================================
- * Se prepara el contenido y el número de teléfono para el botón de WhatsApp.
  */
-// 1. Se genera el resumen completo (consulta + receta) usando la función 'generarMensajeWhatsApp'.
-//    El segundo parámetro 'false' indica que no se debe codificar para URL todavía.
 $mensaje_whatsapp_sin_codificar = generarMensajeWhatsApp($consulta, $medicamentos, false);
-
-// 2. Se limpia el número de teléfono eliminando caracteres no numéricos
-//    y se añade el prefijo de Colombia (+57) si tiene 10 dígitos.
 $telefono_limpio_js = '';
 if (!empty($consulta['telefono_whatsapp'])) {
     $telefono_limpio_js = preg_replace('/[^0-9]/', '', $consulta['telefono_whatsapp']);
@@ -73,7 +115,6 @@ if (!empty($consulta['telefono_whatsapp'])) {
  * ===============================================
  * FORMATEO DE NOMBRES PARA MOSTRAR
  * ===============================================
- * Se convierten los nombres del paciente y del médico a "Estilo Título" para una presentación consistente.
  */
 $nombre_paciente_titulo = mb_convert_case(($consulta['nombre'] ?? '') . ' ' . ($consulta['apellido'] ?? ''), MB_CASE_TITLE, 'UTF-8');
 $nombre_medico_titulo = mb_convert_case(($consulta['nombre_medico'] ?? '') . ' ' . ($consulta['apellido_medico'] ?? ''), MB_CASE_TITLE, 'UTF-8');
@@ -161,22 +202,74 @@ $nombre_medico_titulo = mb_convert_case(($consulta['nombre_medico'] ?? '') . ' '
             </div>
 
            <div class="card card-purple">
-                <div class="card-header"><h3 class="card-title">Signos Vitales de esta Consulta</h3></div>
-                <div class="card-body">
+                <div class="card-header"><h3 class="card-title">Signos Vitales y Antropometría</h3></div>
+                <div class="card-body" style="font-size: 1.1em;">
+                    
+                    <?php
+                        // Obtenemos las clasificaciones y sus clases para los badges
+                        $imc_texto = $consulta['imc_clasificacion'] ?? 'N/A';
+                        $imc_clase = getBadgeClass($imc_texto);
+                        
+                        $hta_texto = $consulta['clasificacion_hta'] ?? 'N/A';
+                        $hta_clase = getBadgeClass($hta_texto);
+                        
+                        $tfg_texto = getClasificacionTFGTexto($consulta['filtrado_glomerular_ckd_epi'] ?? null);
+                        $tfg_clase = getBadgeClass($tfg_texto);
+                    ?>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Peso:</strong> <?php echo htmlspecialchars($consulta['peso_kg'] ?? 'N/A'); ?> kg
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Talla:</strong> <?php echo htmlspecialchars($consulta['talla_cm'] ?? 'N/A'); ?> cm
+                        </div>
+                        <div class="col-md-4">
+                            <strong>IMC:</strong> <?php echo htmlspecialchars($consulta['imc'] ?? 'N/A'); ?>
+                            <span class="badge <?php echo $imc_clase; ?> ml-2"><?php echo htmlspecialchars($imc_texto); ?></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>T.A. Sistólica:</strong> <?php echo htmlspecialchars($consulta['tension_sistolica'] ?? 'N/A'); ?> mmHg
+                        </div>
+                        <div class="col-md-4">
+                            <strong>T.A. Diastólica:</strong> <?php echo htmlspecialchars($consulta['tension_diastolica'] ?? 'N/A'); ?> mmHg
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Clasificación HTA:</strong>
+                            <span class="badge <?php echo $hta_clase; ?> ml-2"><?php echo htmlspecialchars($hta_texto); ?></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Frec. Cardíaca:</strong> <?php echo htmlspecialchars($consulta['frecuencia_cardiaca'] ?? 'N/A'); ?> lat/min
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Frec. Respiratoria:</strong> <?php echo htmlspecialchars($consulta['frecuencia_respiratoria'] ?? 'N/A'); ?> resp/min
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Temperatura:</strong> <?php echo htmlspecialchars($consulta['temperatura_c'] ?? 'N/A'); ?> °C
+                        </div>
+                    </div>
+
                     <div class="row">
-                        <div class="col-md-3"><p><strong>Peso:</strong> <?php echo htmlspecialchars($consulta['peso_kg'] ?? 'N/A'); ?> kg</p></div>
-                        <div class="col-md-3"><p><strong>Talla:</strong> <?php echo htmlspecialchars($consulta['talla_cm'] ?? 'N/A'); ?> cm</p></div>
-                        <div class="col-md-3"><p><strong>IMC:</strong> <?php echo htmlspecialchars($consulta['imc'] ?? 'N/A'); ?></p></div>
-                        <div class="col-md-3"><p><strong>Tensión Arterial:</strong> <?php echo htmlspecialchars($consulta['tension_arterial'] ?? 'N/A'); ?></p></div>
+                        <div class="col-md-4">
+                            <strong>Hb Glicosilada (HbA1c %):</strong> <?php echo htmlspecialchars($consulta['hemoglobina_glicosilada'] ?? 'N/A'); ?> %
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Creatinina Sérica:</strong> <?php echo htmlspecialchars($consulta['creatinina_serica'] ?? 'N/A'); ?> mg/dL
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Filtrado Glomerular:</strong> <?php echo htmlspecialchars($consulta['filtrado_glomerular_ckd_epi'] ?? 'N/A'); ?>
+                            <span class="badge <?php echo $tfg_clase; ?> ml-2" style="font-size: 0.9em;"><?php echo htmlspecialchars($tfg_texto); ?></span>
+                        </div>
                     </div>
-                     <div class="row">
-                        <div class="col-md-4"><p><strong>Frec. Cardíaca:</strong> <?php echo htmlspecialchars($consulta['frecuencia_cardiaca'] ?? 'N/A'); ?> lat/min</p></div>
-                        <div class="col-md-4"><p><strong>Frec. Respiratoria:</strong> <?php echo htmlspecialchars($consulta['frecuencia_respiratoria'] ?? 'N/A'); ?> resp/min</p></div>
-                        <div class="col-md-4"><p><strong>Temperatura:</strong> <?php echo htmlspecialchars($consulta['temperatura_c'] ?? 'N/A'); ?> °C</p></div>
-                    </div>
+
                 </div>
             </div>
-
             <?php if (!empty($medicamentos)): // Solo se muestra si hay medicamentos recetados ?>
             <div class="card card-danger">
                 <div class="card-header"><h3 class="card-title">Receta Médica</h3></div>
@@ -253,7 +346,6 @@ $nombre_medico_titulo = mb_convert_case(($consulta['nombre_medico'] ?? '') . ' '
 document.addEventListener('DOMContentLoaded', function () {
     /**
      * SCRIPT PARA ACTUALIZAR EL LABEL DEL INPUT FILE
-     * Muestra el nombre del archivo seleccionado por el usuario en el campo de subida.
      */
     const inputFile = document.querySelector('.custom-file-input');
     if (inputFile) {
@@ -266,25 +358,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /**
      * SCRIPT PARA EL BOTÓN DE MOSTRAR RESUMEN Y ENVIAR POR WHATSAPP
-     * Se activa al hacer clic en el botón con id 'btn-mostrar-resumen-whatsapp'.
      */
     const btnMostrarResumen = document.getElementById('btn-mostrar-resumen-whatsapp');
     if (btnMostrarResumen) {
         btnMostrarResumen.addEventListener('click', function() {
-            // Obtiene el texto del resumen desde el div oculto
             const textoParaEnviar = document.getElementById('texto-whatsapp-oculto').textContent;
-            // Obtiene el número de teléfono desde el atributo 'data-telefono' del botón
             const telefono = this.getAttribute('data-telefono'); 
-            // Codifica el mensaje para la URL
             const mensajeUrl = encodeURIComponent(textoParaEnviar);
-            // Construye el enlace de WhatsApp
             const whatsappLink = `https://wa.me/${telefono}?text=${mensajeUrl}`;
 
-            // Muestra la ventana emergente de SweetAlert2
             Swal.fire({
                 title: '<strong>Resumen para WhatsApp</strong>',
                 icon: 'info',
-                html: `<pre style="white-space: pre-wrap; text-align: left;">${textoParaEnviar}</pre>`, // Muestra el resumen
+                html: `<pre style="white-space: pre-wrap; text-align: left;">${textoParaEnviar}</pre>`, 
                 showCloseButton: true,
                 showCancelButton: true,
                 focusConfirm: false,
@@ -293,14 +379,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 cancelButtonText: '<i class="fas fa-copy"></i> Copiar',
                 cancelButtonAriaLabel: 'Copiar texto'
             }).then((result) => {
-                if (result.isConfirmed) { // Si hace clic en 'Enviar'
-                    window.open(whatsappLink, '_blank'); // Abre WhatsApp
-                } else if (result.dismiss === Swal.DismissReason.cancel) { // Si hace clic en 'Copiar'
+                if (result.isConfirmed) { 
+                    window.open(whatsappLink, '_blank'); 
+                } else if (result.dismiss === Swal.DismissReason.cancel) { 
                     navigator.clipboard.writeText(textoParaEnviar).then(() => {
-                        toastr.success('¡Resumen copiado al portapapeles!'); // Muestra notificación de éxito
+                        toastr.success('¡Resumen copiado al portapapeles!'); 
                     }, (err) => {
-                        toastr.error('No se pudo copiar el texto.'); // Muestra notificación de error
-                        console.error('Error al copiar: ', err); // Registra el error en consola
+                        toastr.error('No se pudo copiar el texto.'); 
+                        console.error('Error al copiar: ', err); 
                     });
                 }
             });
