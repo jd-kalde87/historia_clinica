@@ -129,10 +129,10 @@ $conexion->close();
                 </div>
 
                 <div class="col-lg-4 col-md-6">
-                    <div class="small-box bg-warning">
+                    <div class="small-box bg-warning">  
                         <div class="inner">
                             <h3><?php echo $consultas_mes; ?></h3>
-                            <p>Consultas Este Mes</p>
+                            <p>Consultas Realizadas</p>
                         </div>
                         <div class="icon">
                             <i class="fas fa-calendar-alt"></i>

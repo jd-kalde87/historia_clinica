@@ -47,7 +47,7 @@
             <div class="col-md-4">
                 <div class="form-group">
                     <label>Clasificación HTA</label>
-                    <span id="hta_clasificacion_alerta" class="badge d-block p-2" style="font-size: 1.0em; margin-top: 5px;; width: 100%;"></span>
+                    <span id="hta_clasificacion_alerta" class="badge d-block p-2" style="font-size: 1.0em; margin-top: 5px;width: 100%;"></span>
                 </div>
             </div>
         </div>
@@ -90,7 +90,8 @@
                 <div class="form-group">
                     <label for="filtrado_glomerular_ckd_epi">Filtrado Glomerular (CKD-EPI)</label>
                     <input type="text" class="form-control" id="filtrado_glomerular_ckd_epi" name="filtrado_glomerular_ckd_epi" readonly>
-                    <span id="egfr_clasificacion_alerta" class="badge mt-1" style="font-size: 0.9em; width: 100%;"></span>
+                    
+                    <span id="egfr_clasificacion_alerta" class="badge mt-1" style="font-size: 0.9em; width: 100%; white-space: normal; line-height: 1.2;"></span>
                 </div>
             </div>
         </div>

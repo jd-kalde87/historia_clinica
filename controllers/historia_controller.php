@@ -24,66 +24,79 @@ $id_cita_recibido = (int)($_POST['id_cita_a_completar'] ?? 0);
 
 $numero_documento = $conexion->real_escape_string(trim($_POST['numero_documento']));
 $id_cita_a_completar = (int)($_POST['id_cita_a_completar'] ?? 0);
+
+// --- CAMBIO 1: Leemos el nuevo campo 'form_type' ---
+// (Este campo lo añadimos en los pasos anteriores a ambos formularios)
+$form_type = $_POST['form_type'] ?? 'completa'; // Asumimos 'completa' por defecto si no viene
+
 try {
-    // --- LÓGICA PARA MANEJAR CAMPOS DE GESTACIÓN ---
-    $embarazada = isset($_POST['embarazada']) ? (int)$_POST['embarazada'] : 0;
-    $semanas_gestacion = ($embarazada === 1 && !empty($_POST['semanas_gestacion'])) ? (int)$_POST['semanas_gestacion'] : NULL;
 
-    // --- 3. PROCESAR DATOS DEL PACIENTE (INSERTAR O ACTUALIZAR) ---
-    $numero_documento = $conexion->real_escape_string(trim($_POST['numero_documento']));
+    // --- CAMBIO 2: El bloque 3 ahora es CONDICIONAL ---
+    // Solo actualizamos/insertamos en la tabla 'pacientes' si el formulario
+    // es de tipo 'completa' (es decir, NO es un 'control').
+    if ($form_type === 'completa') {
     
-    $nombre_paciente = mb_convert_case(trim($_POST['nombre']), MB_CASE_TITLE, 'UTF-8');
-    $apellido_paciente = mb_convert_case(trim($_POST['apellido']), MB_CASE_TITLE, 'UTF-8');
+        // --- LÓGICA PARA MANEJAR CAMPOS DE GESTACIÓN ---
+        $embarazada = isset($_POST['embarazada']) ? (int)$_POST['embarazada'] : 0;
+        $semanas_gestacion = ($embarazada === 1 && !empty($_POST['semanas_gestacion'])) ? (int)$_POST['semanas_gestacion'] : NULL;
 
-    $stmt_paciente_check = $conexion->prepare("SELECT numero_documento FROM pacientes WHERE numero_documento = ?");
-    $stmt_paciente_check->bind_param("s", $numero_documento);
-    $stmt_paciente_check->execute();
-    $resultado_check = $stmt_paciente_check->get_result();
-    $paciente_existe = $resultado_check->num_rows > 0;
-    $stmt_paciente_check->close();
+        // --- 3. PROCESAR DATOS DEL PACIENTE (INSERTAR O ACTUALIZAR) ---
+        $numero_documento = $conexion->real_escape_string(trim($_POST['numero_documento']));
+        
+        $nombre_paciente = mb_convert_case(trim($_POST['nombre']), MB_CASE_TITLE, 'UTF-8');
+        $apellido_paciente = mb_convert_case(trim($_POST['apellido']), MB_CASE_TITLE, 'UTF-8');
 
-    if ($paciente_existe) {
-        $sql_paciente = "UPDATE pacientes SET tipo_documento=?, nombre=?, apellido=?, fecha_nacimiento=?, sexo=?, estado_civil=?, direccion=?, profesion=?, telefono_whatsapp=?, embarazada=?, semanas_gestacion=? WHERE numero_documento=?";
-        $stmt_paciente = $conexion->prepare($sql_paciente);
-        $stmt_paciente->bind_param(
-            "sssssssssiis",
-            $_POST['tipo_documento'],
-            $nombre_paciente,
-            $apellido_paciente,
-            $_POST['fecha_nacimiento'],
-            $_POST['sexo'],
-            $_POST['estado_civil'],
-            $_POST['direccion'],
-            $_POST['profesion'],
-            $_POST['telefono_whatsapp'],
-            $embarazada,
-            $semanas_gestacion,
-            $numero_documento
-        );
-    } else {
-        $sql_paciente = "INSERT INTO pacientes (numero_documento, tipo_documento, nombre, apellido, fecha_nacimiento, sexo, estado_civil, direccion, profesion, telefono_whatsapp, embarazada, semanas_gestacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt_paciente = $conexion->prepare($sql_paciente);
-        $stmt_paciente->bind_param(
-            "ssssssssssii",
-            $numero_documento,
-            $_POST['tipo_documento'],
-            $nombre_paciente,
-            $apellido_paciente,
-            $_POST['fecha_nacimiento'],
-            $_POST['sexo'],
-            $_POST['estado_civil'],
-            $_POST['direccion'],
-            $_POST['profesion'],
-            $_POST['telefono_whatsapp'],
-            $embarazada,
-            $semanas_gestacion
-        );
-    }
-    
-    if (!$stmt_paciente->execute()) {
-        throw new Exception("Error al guardar datos del paciente: " . $stmt_paciente->error);
-    }
-    $stmt_paciente->close();
+        $stmt_paciente_check = $conexion->prepare("SELECT numero_documento FROM pacientes WHERE numero_documento = ?");
+        $stmt_paciente_check->bind_param("s", $numero_documento);
+        $stmt_paciente_check->execute();
+        $resultado_check = $stmt_paciente_check->get_result();
+        $paciente_existe = $resultado_check->num_rows > 0;
+        $stmt_paciente_check->close();
+
+        if ($paciente_existe) {
+            $sql_paciente = "UPDATE pacientes SET tipo_documento=?, nombre=?, apellido=?, fecha_nacimiento=?, sexo=?, estado_civil=?, direccion=?, profesion=?, telefono_whatsapp=?, embarazada=?, semanas_gestacion=? WHERE numero_documento=?";
+            $stmt_paciente = $conexion->prepare($sql_paciente);
+            $stmt_paciente->bind_param(
+                "sssssssssiis",
+                $_POST['tipo_documento'],
+                $nombre_paciente,
+                $apellido_paciente,
+                $_POST['fecha_nacimiento'],
+                $_POST['sexo'],
+                $_POST['estado_civil'],
+                $_POST['direccion'],
+                $_POST['profesion'],
+                $_POST['telefono_whatsapp'],
+                $embarazada,
+                $semanas_gestacion,
+                $numero_documento
+            );
+        } else {
+            $sql_paciente = "INSERT INTO pacientes (numero_documento, tipo_documento, nombre, apellido, fecha_nacimiento, sexo, estado_civil, direccion, profesion, telefono_whatsapp, embarazada, semanas_gestacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt_paciente = $conexion->prepare($sql_paciente);
+            $stmt_paciente->bind_param(
+                "ssssssssssii",
+                $numero_documento,
+                $_POST['tipo_documento'],
+                $nombre_paciente,
+                $apellido_paciente,
+                $_POST['fecha_nacimiento'],
+                $_POST['sexo'],
+                $_POST['estado_civil'],
+                $_POST['direccion'],
+                $_POST['profesion'],
+                $_POST['telefono_whatsapp'],
+                $embarazada,
+                $semanas_gestacion
+            );
+        }
+        
+        if (!$stmt_paciente->execute()) {
+            throw new Exception("Error al guardar datos del paciente: " . $stmt_paciente->error);
+        }
+        $stmt_paciente->close();
+
+    } // --- FIN DEL BLOQUE CONDICIONAL ---
 
 
     // --- 4. GENERAR CÓDIGO Y GUARDAR LA NUEVA ENTRADA EN LA HISTORIA CLÍNICA ---
@@ -92,27 +105,20 @@ try {
     $nuevo_id = $last_id + 1;
     $codigo_historia = 'HC-' . str_pad($nuevo_id, 5, '0', STR_PAD_LEFT);
 
-    // --- CAMBIO 1: Recogemos las NUEVAS variables del formulario ---
-    // Recogemos los signos vitales. Si están vacíos, los guardamos como NULL.
+    // --- Recogemos las variables (esto funciona igual para ambos formularios) ---
     $peso = !empty($_POST['peso_kg']) ? (float)$_POST['peso_kg'] : NULL;
     $talla = !empty($_POST['talla_cm']) ? (float)$_POST['talla_cm'] : NULL;
-    $imc_calculado_js = !empty($_POST['imc']) ? (float)$_POST['imc'] : NULL; // El IMC que viene del JS
-    
+    $imc_calculado_js = !empty($_POST['imc']) ? (float)$_POST['imc'] : NULL;
     $tension_sistolica = !empty($_POST['tension_sistolica']) ? (int)$_POST['tension_sistolica'] : NULL;
     $tension_diastolica = !empty($_POST['tension_diastolica']) ? (int)$_POST['tension_diastolica'] : NULL;
-    
     $frecuencia_cardiaca = !empty($_POST['frecuencia_cardiaca']) ? (int)$_POST['frecuencia_cardiaca'] : NULL;
     $frecuencia_respiratoria = !empty($_POST['frecuencia_respiratoria']) ? (int)$_POST['frecuencia_respiratoria'] : NULL;
     $temperatura = !empty($_POST['temperatura_c']) ? (float)$_POST['temperatura_c'] : NULL;
-    
     $creatinina_serica = !empty($_POST['creatinina_serica']) ? (float)$_POST['creatinina_serica'] : NULL;
     $hemoglobina_glicosilada = !empty($_POST['hemoglobina_glicosilada']) ? (float)$_POST['hemoglobina_glicosilada'] : NULL;
-    // La variable antigua $tension_arterial (varchar) ya no se usa y se ha eliminado.
 
 
-    // --- CAMBIO 2: LÓGICA DE CÁLCULO DEL LADO DEL SERVIDOR ---
-    // Es una BUENA PRÁCTICA recalcular los valores en el servidor 
-    // para asegurar la integridad de los datos, por si el JS falla.
+    // --- LÓGICA DE CÁLCULO DEL LADO DEL SERVIDOR ---
     
     // Recalcular IMC
     $imc = NULL;
@@ -120,7 +126,7 @@ try {
         $talla_m = $talla / 100;
         $imc = round($peso / ($talla_m * $talla_m), 2);
     } else {
-        $imc = $imc_calculado_js; // Usar el del JS si no se pueden calcular aquí
+        $imc = $imc_calculado_js;
     }
 
     // Clasificación de IMC
@@ -144,30 +150,29 @@ try {
         elseif ($tension_sistolica < 120 && $tension_diastolica < 80) $clasificacion_hta = "Presión Arterial Normal";
     }
 
-    // Cálculo de Filtrado Glomerular (CKD-EPI)
+    // --- CAMBIO 3: Cálculo de TFG también es CONDICIONAL ---
     $filtrado_glomerular_ckd_epi = NULL;
-    $fecha_nacimiento_paciente = $_POST['fecha_nacimiento'];
-    $sexo_paciente = $_POST['sexo']; // 'MASCULINO' o 'FEMENINO'
-    
-    // Usamos la función de 'funciones.php' (que ya estabas importando)
-    $edad_paciente = calcularEdad($fecha_nacimiento_paciente); 
+    // Solo podemos calcular la edad y TFG si el form es 'completa' y trae los datos
+    if ($form_type === 'completa' && !empty($_POST['fecha_nacimiento']) && !empty($_POST['sexo'])) {
+        $fecha_nacimiento_paciente = $_POST['fecha_nacimiento'];
+        $sexo_paciente = $_POST['sexo'];
+        $edad_paciente = calcularEdad($fecha_nacimiento_paciente); 
 
-    if ($creatinina_serica !== NULL && $edad_paciente >= 18 && !empty($sexo_paciente)) {
-        $k = ($sexo_paciente == 'FEMENINO') ? 0.7 : 0.9;
-        $alpha = ($sexo_paciente == 'FEMENINO') ? -0.329 : -0.411;
-        $S = ($sexo_paciente == 'FEMENINO') ? 1.018 : 1.0;
-        $R = 1.0; // Asumimos no-negro
+        if ($creatinina_serica !== NULL && $edad_paciente >= 18 && !empty($sexo_paciente)) {
+            $k = ($sexo_paciente == 'FEMENINO') ? 0.7 : 0.9;
+            $alpha = ($sexo_paciente == 'FEMENINO') ? -0.329 : -0.411;
+            $S = ($sexo_paciente == 'FEMENINO') ? 1.018 : 1.0;
+            $R = 1.0; 
 
-        $ratio = $creatinina_serica / $k;
-        $egfr_raw = 141 * pow(min($ratio, 1), $alpha) * pow(max($ratio, 1), -1.209) * pow(0.993, $edad_paciente) * $S * $R;
-        $filtrado_glomerular_ckd_epi = round($egfr_raw, 2);
+            $ratio = $creatinina_serica / $k;
+            $egfr_raw = 141 * pow(min($ratio, 1), $alpha) * pow(max($ratio, 1), -1.209) * pow(0.993, $edad_paciente) * $S * $R;
+            $filtrado_glomerular_ckd_epi = round($egfr_raw, 2);
+        }
     }
     // --- FIN DE CÁLCULOS DEL SERVIDOR ---
 
 
-// --- CAMBIO 3: Actualizamos la consulta INSERT ---
-    // Se elimina 'tension_arterial' (varchar)
-    // Se añaden 6 nuevas columnas al final
+    // Consulta INSERT (ya estaba correcta)
     $sql_historia = "INSERT INTO historias_clinicas (
         codigo_historia, paciente_documento, id_medico, fecha_consulta, 
         motivo_consulta, enfermedad_actual, antecedentes_personales, antecedentes_familiares, 
@@ -183,10 +188,9 @@ try {
     $stmt_historia = $conexion->prepare($sql_historia);
     $id_medico_sesion = $_SESSION['id_usuario']; 
     
-    // --- CAMBIO 4: Actualizamos el bind_param (ESTA ES LA LÍNEA CORREGIDA) ---
-    // El string ahora es "ssisssssssssdddiidiissddd" (25 caracteres)
+    // Bind_param (ya estaba correcto)
     $stmt_historia->bind_param(
-        "ssisssssssssdddiidiissddd", // s=string, i=integer, d=double(decimal)
+        "ssisssssssssdddiidiissddd", // 25 caracteres
         $codigo_historia, $numero_documento, $id_medico_sesion,
         $_POST['motivo_consulta'], $_POST['enfermedad_actual'], $_POST['antecedentes_personales'],
         $_POST['antecedentes_familiares'], $_POST['examen_fisico'], $_POST['hallazgos_examen_fisico'],
@@ -198,16 +202,17 @@ try {
         $hemoglobina_glicosilada
     );
 
-    // Ejecutamos la consulta y verificamos errores.
+    // Ejecutamos la consulta
     if (!$stmt_historia->execute()) {
-        throw new Exception("Error al guardar la historia clínica: " ->error);
+        // Corregido: Faltaba concatenar el error
+        throw new Exception("Error al guardar la historia clínica: " . $stmt_historia->error);
     }
     
     $id_historia_creada = $conexion->insert_id;
     $stmt_historia->close();
 
 
-    // --- 5. PROCESAR RECETA MÉDICA (SI SE AÑADIERON MEDICAMENTOS) ---
+    // --- 5. PROCESAR RECETA MÉDICA (Funciona igual para ambos) ---
     $medicamentos_nombres = $_POST['medicamento_nombre'] ?? [];
     if (!empty($medicamentos_nombres) && !empty(trim($medicamentos_nombres[0]))) { 
 
@@ -245,7 +250,7 @@ try {
         $stmt_medicamento->close();
     }
     
-    // 6. ACTUALIZAR EL ESTADO DE LA CITA (SI VIENE DE UNA)
+    // 6. ACTUALIZAR EL ESTADO DE LA CITA (Funciona igual para ambos)
     if ($id_cita_a_completar > 0) {
         $sql_update_cita = "UPDATE citas SET estado_cita = 'Completada' WHERE id_cita = ?";
         $stmt_update_cita = $conexion->prepare($sql_update_cita);
@@ -262,8 +267,14 @@ try {
 } catch (Exception $e) {
     // --- 8. REVERTIR TRANSACCIÓN EN CASO DE ERROR ---
     $conexion->rollback();
-    $redirect_url = defined('BASE_URL') ? BASE_URL . 'views/nueva_historia.php' : '../views/nueva_historia.php';
-    header('Location: ' . $redirect_url . '?documento=' . urlencode($numero_documento) . '&status=error&msg=' . urlencode('Error al guardar: ' . $e->getMessage()));
+    
+    // --- CAMBIO 4: Redirección de error condicional ---
+    // (Redirige al formulario correcto según el tipo)
+    $redirect_page = ($form_type === 'control') ? 'nuevo_control.php' : 'nueva_historia.php';
+    $base_url = defined('BASE_URL') ? BASE_URL . 'views/' : '../views/';
+    
+    header('Location: ' . $base_url . $redirect_page . '?documento=' . urlencode($numero_documento) . '&status=error&msg=' . urlencode('Error al guardar: ' . $e->getMessage()));
+
 
 } finally {
     // --- 9. CERRAR CONEXIÓN Y SENTENCIAS PREPARADAS ---

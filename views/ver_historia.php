@@ -12,9 +12,8 @@ require_once '../models/consulta_model.php';
 
 /**
  * ===============================================
- * FUNCIONES HELPER PARA CLASIFICACIONES (NUEVO)
+ * FUNCIONES HELPER PARA CLASIFICACIONES
  * ===============================================
- * Estas funciones nos ayudan a colorear los 'badges'
  */
 
 /**
@@ -84,7 +83,6 @@ $id_historia = (int)$_GET['id'];
  * ===============================================
  */
 $conexion = conectarDB();
-// Asumimos que obtenerDetallesConsulta trae todas las columnas de 'historias_clinicas'
 $datos = obtenerDetallesConsulta($conexion, $id_historia); 
 $conexion->close();
 
@@ -98,6 +96,11 @@ $consulta = $datos['consulta'];
 $medicamentos = $datos['medicamentos'];
 $archivos = $datos['archivos'];
 
+// --- CAMBIO LÓGICO: DETERMINAR SI ES UN CONTROL ---
+// Usamos el valor que hardcodeamos en el formulario 'nuevo_control.php'
+$es_control = (isset($consulta['motivo_consulta']) && $consulta['motivo_consulta'] === 'NOTA DE CONTROL / EVOLUCION');
+
+
 /**
  * ===============================================
  * LÓGICA PARA EL MENSAJE DE WHATSAPP
@@ -109,7 +112,6 @@ if (!empty($consulta['telefono_whatsapp'])) {
     $telefono_limpio_js = preg_replace('/[^0-9]/', '', $consulta['telefono_whatsapp']);
     if (strlen($telefono_limpio_js) == 10) { $telefono_limpio_js = '57' . $telefono_limpio_js; } 
 }
-// --- FIN: LÓGICA DE WHATSAPP ---
 
 /**
  * ===============================================
@@ -141,10 +143,18 @@ $nombre_medico_titulo = mb_convert_case(($consulta['nombre_medico'] ?? '') . ' '
             </div>
             <div class="row mb-2 align-items-center">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Detalle de Consulta - <?php echo htmlspecialchars($consulta['codigo_historia']); ?></h1>
+                    <h1 class="m-0">
+                        <?php echo $es_control ? 'Detalle de Control' : 'Detalle de Consulta'; ?>
+                        - <?php echo htmlspecialchars($consulta['codigo_historia']); ?>
+                    </h1>
                 </div>
                 <div class="col-sm-6">
                     <div class="float-sm-right">
+                        
+                        <a href="nuevo_control.php?documento=<?php echo htmlspecialchars($consulta['numero_documento']); ?>" class="btn btn-warning" title="Registrar Nueva Consulta de Control">
+                            <i class="fas fa-plus"></i> Agregar Control
+                        </a>
+
                         <a href="../reports/generar_historia_pdf.php?id=<?php echo $id_historia; ?>" target="_blank" class="btn btn-primary" title="Imprimir Resumen de Consulta"><i class="fas fa-print"></i> Consulta</a>
                         
                         <?php if (!empty($medicamentos)): ?>
@@ -187,20 +197,34 @@ $nombre_medico_titulo = mb_convert_case(($consulta['nombre_medico'] ?? '') . ' '
                     <p><strong>Fecha y Hora de Consulta:</strong> <?php echo date("d/m/Y h:i A", strtotime($consulta['fecha_consulta'])); ?></p>
                     <p><strong>Médico Tratante:</strong> Dr(a). <?php echo htmlspecialchars($nombre_medico_titulo); ?></p>
                     <hr>
-                    <p><strong>Motivo de Consulta:</strong><br><?php echo nl2br(htmlspecialchars($consulta['motivo_consulta'] ?? 'No registrado')); ?></p>
-                    <p><strong>Enfermedad Actual:</strong><br><?php echo nl2br(htmlspecialchars($consulta['enfermedad_actual'] ?? 'No registrado')); ?></p>
-                    <p><strong>Antecedentes Personales:</strong><br><?php echo nl2br(htmlspecialchars($consulta['antecedentes_personales'] ?? 'No registrado')); ?></p>
-                    <p><strong>Antecedentes Familiares:</strong><br><?php echo nl2br(htmlspecialchars($consulta['antecedentes_familiares'] ?? 'No registrado')); ?></p>
-                    <hr>
-                    <p><strong>Examen Físico:</strong><br><?php echo nl2br(htmlspecialchars($consulta['examen_fisico'] ?? 'No registrado')); ?></p>
-                    <p><strong>Hallazgos del Examen Físico:</strong><br><?php echo nl2br(htmlspecialchars($consulta['hallazgos_examen_fisico'] ?? 'No registrado')); ?></p>
-                    <hr>
-                    <p><strong>Diagnóstico Principal:</strong><br><?php echo nl2br(htmlspecialchars($consulta['diagnostico_principal'] ?? 'No registrado')); ?></p>
-                    <p><strong>Tratamiento a Seguir:</strong><br><?php echo nl2br(htmlspecialchars($consulta['tratamiento'] ?? 'No registrado')); ?></p>
-                    <p><strong>Solicitud de Exámenes:</strong><br><?php echo nl2br(htmlspecialchars($consulta['solicitud_examenes'] ?? 'No registrado')); ?></p>
+
+                    <?php if ($es_control): // --- VISTA SI ES UN CONTROL --- ?>
+                        
+                        <p><strong>Evolución / Nota de Control:</strong><br><?php echo nl2br(htmlspecialchars($consulta['enfermedad_actual'] ?? 'No registrado')); ?></p>
+                        <p><strong>Hallazgos del Examen Físico:</strong><br><?php echo nl2br(htmlspecialchars($consulta['hallazgos_examen_fisico'] ?? 'No registrado')); ?></p>
+                        <hr>
+                        <p><strong>Diagnóstico Principal:</strong><br><?php echo nl2br(htmlspecialchars($consulta['diagnostico_principal'] ?? 'No registrado')); ?></p>
+                        <p><strong>Tratamiento a Seguir:</strong><br><?php echo nl2br(htmlspecialchars($consulta['tratamiento'] ?? 'No registrado')); ?></p>
+                        <p><strong>Solicitud de Exámenes:</strong><br><?php echo nl2br(htmlspecialchars($consulta['solicitud_examenes'] ?? 'No registrado')); ?></p>
+
+                    <?php else: // --- VISTA SI ES UNA CONSULTA COMPLETA --- ?>
+                        
+                        <p><strong>Motivo de Consulta:</strong><br><?php echo nl2br(htmlspecialchars($consulta['motivo_consulta'] ?? 'No registrado')); ?></p>
+                        <p><strong>Enfermedad Actual:</strong><br><?php echo nl2br(htmlspecialchars($consulta['enfermedad_actual'] ?? 'No registrado')); ?></p>
+                        <p><strong>Antecedentes Personales:</strong><br><?php echo nl2br(htmlspecialchars($consulta['antecedentes_personales'] ?? 'No registrado')); ?></p>
+                        <p><strong>Antecedentes Familiares:</strong><br><?php echo nl2br(htmlspecialchars($consulta['antecedentes_familiares'] ?? 'No registrado')); ?></p>
+                        <hr>
+                        <p><strong>Examen Físico:</strong><br><?php echo nl2br(htmlspecialchars($consulta['examen_fisico'] ?? 'No registrado')); ?></p>
+                        <p><strong>Hallazgos del Examen Físico:</strong><br><?php echo nl2br(htmlspecialchars($consulta['hallazgos_examen_fisico'] ?? 'No registrado')); ?></p>
+                        <hr>
+                        <p><strong>Diagnóstico Principal:</strong><br><?php echo nl2br(htmlspecialchars($consulta['diagnostico_principal'] ?? 'No registrado')); ?></p>
+                        <p><strong>Tratamiento a Seguir:</strong><br><?php echo nl2br(htmlspecialchars($consulta['tratamiento'] ?? 'No registrado')); ?></p>
+                        <p><strong>Solicitud de Exámenes:</strong><br><?php echo nl2br(htmlspecialchars($consulta['solicitud_examenes'] ?? 'No registrado')); ?></p>
+
+                    <?php endif; ?>
                 </div>
             </div>
-
+            <?php if (!$es_control): // --- MOSTRAR SIGNOS VITALES SOLO SI NO ES UN CONTROL --- ?>
            <div class="card card-purple">
                 <div class="card-header"><h3 class="card-title">Signos Vitales y Antropometría</h3></div>
                 <div class="card-body" style="font-size: 1.1em;">
@@ -270,6 +294,7 @@ $nombre_medico_titulo = mb_convert_case(($consulta['nombre_medico'] ?? '') . ' '
 
                 </div>
             </div>
+           <?php endif; // --- FIN DE LA CONDICIÓN !$es_control --- ?>
             <?php if (!empty($medicamentos)): // Solo se muestra si hay medicamentos recetados ?>
             <div class="card card-danger">
                 <div class="card-header"><h3 class="card-title">Receta Médica</h3></div>

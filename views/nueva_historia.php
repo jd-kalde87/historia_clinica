@@ -41,6 +41,7 @@ if (isset($_GET['id_cita'])) {
                 <!-- Campo oculto para pasar el número de documento si viene de la página de búsqueda -->
                 <input type="hidden" id="documento_a_cargar" value="<?php echo $documento_url; ?>">
                 <input type="hidden" name="id_cita_a_completar" value="<?php echo $id_cita_url; ?>">
+                <input type="hidden" name="form_type" value="completa">
                 <!-- =============================================== -->
                 <!--    TARJETA: INFORMACIÓN GENERAL DEL PACIENTE    -->
                 <!-- =============================================== -->
