@@ -179,7 +179,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     calendar.render();
+const idCitaVer = urlParams.get('id_cita_ver');
 
+if (idCitaVer) {
+    // Si el parámetro existe, usamos la misma lógica que 'eventClick'
+    // para obtener los datos de la cita desde la API.
+
+    // Usamos la variable 'modalCita' que ya definiste al inicio del script
+    modalCita.modal('show'); // Mostramos el modal primero para que el usuario vea la carga
+    modalTitle.text('Cargando Detalles...');
+    modalBody.html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-3x"></i></div>'); // Feedback de carga
+
+    $.get(`../controllers/citas_api.php?action=get_cita&id=${idCitaVer}`, function(data) {
+        if(data) {
+            // La función 'mostrarFormulario' ya sabe cómo llenar los campos
+            // y asignar los eventos a los botones.
+            mostrarFormulario(data.fecha_cita, data);
+        } else {
+            modalCita.modal('hide'); // Ocultar si hay error
+            toastr.error('No se pudieron cargar los detalles de la cita solicitada.');
+        }
+    }, 'json')
+    .fail(function() {
+        modalCita.modal('hide');
+        toastr.error('Error de red al consultar la cita.');
+    });
+}
     const pacientePreseleccionado = urlParams.get('preseleccionar_paciente');
     if (pacientePreseleccionado) {
         const hoyStr = new Date().toISOString().slice(0, 10);
