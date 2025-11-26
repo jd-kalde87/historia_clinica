@@ -28,6 +28,11 @@ require_once 'includes/sidebar.php';
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Listado de Pacientes Registrados</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-primary btn-sm" id="btn-nuevo-paciente">
+                            <i class="fas fa-user-plus"></i> Nuevo Paciente
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table id="tabla-gestionar-pacientes" class="table table-bordered table-striped">
@@ -54,7 +59,6 @@ require_once 'includes/footer.php';
 ?>
 
 <script src="../assets/adminlte/plugins/sweetalert2/sweetalert2.all.min.js"></script>
-
 <script src="../assets/js/gestionar_pacientes.js"></script>
 
 <div id="formulario-paciente-template" style="display: none;">
