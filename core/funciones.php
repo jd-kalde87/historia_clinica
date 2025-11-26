@@ -8,12 +8,15 @@ require_once 'config.php'; // <-- AÑADIR ESTA LÍNEA
  * @param array $medicamentos Array con los medicamentos de la receta.
  * @return string El mensaje completo y codificado para usar en una URL.
  */
-function generarMensajeWhatsApp($consulta, $medicamentos,  $codificar = true) {
+function generarMensajeWhatsApp($consulta, $medicamentos, $codificar = true) {
     // Construimos el mensaje de texto plano usando los datos recibidos
     $mensaje = "*Resumen de tu Consulta Médica* 🩺\n\n";
     $mensaje .= "*Paciente:* " . ($consulta['nombre'] ?? '') . " " . ($consulta['apellido'] ?? '') . "\n";
     $mensaje .= "*Fecha:* " . date("d/m/Y", strtotime($consulta['fecha_consulta'])) . "\n";
-    $mensaje .= "*Médico:* Dr(a). " . ($consulta['nombre_medico'] ?? '') . " " . ($consulta['az|pellido_medico'] ?? '') . "\n\n";
+    
+    // --- CORRECCIÓN AQUÍ: 'apellido_medico' ---
+    $mensaje .= "*Médico:* Dr(a). " . ($consulta['nombre_medico'] ?? '') . " " . ($consulta['apellido_medico'] ?? '') . "\n\n";
+    
     $mensaje .= "--------------------------------------\n\n";
 
     if (!empty($consulta['diagnostico_principal'])) {
@@ -35,7 +38,7 @@ function generarMensajeWhatsApp($consulta, $medicamentos,  $codificar = true) {
     $mensaje .= "--------------------------------------\n";
     $mensaje .= "_Este es un resumen informativo. Guarda este mensaje para tus registros._";
 
-    // Devolvemos el mensaje codificado, listo para ser usado en el enlace
+    // Devolvemos el mensaje codificado o plano según se pida
     return $codificar ? urlencode($mensaje) : $mensaje;
 }
 function calcularEdad($fechaNacimiento) {

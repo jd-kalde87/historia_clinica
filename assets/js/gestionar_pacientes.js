@@ -1,8 +1,13 @@
 $(document).ready(function() {
     
+    // --- ACCIÓN: CLICK EN "NUEVO PACIENTE" ---
+    $('#btn-nuevo-paciente').on('click', function() {
+        // Llamamos al modal pasando 'null' para indicar que es un registro nuevo
+        mostrarModalEdicion(null);
+    });
+
     // Inicialización de la tabla DataTables
     var table = $('#tabla-gestionar-pacientes').DataTable({
-        // ... (configuración de la tabla sin cambios) ...
         "ajax": {
             "url": "../controllers/paciente_controller.php?action=get_all",
             "dataSrc": "data"
@@ -32,42 +37,23 @@ $(document).ready(function() {
 
     /**
      * FUNCIÓN: mostrarModalEdicion
-     * Muestra el formulario para editar un paciente con sus datos cargados.
+     * Muestra el formulario para editar o crear un paciente.
      */
     function mostrarModalEdicion(datosPaciente) {
         const formHtml = $('#formulario-paciente-template').html();
 
         Swal.fire({
-            title: 'Editar Paciente',
+            title: datosPaciente ? 'Editar Paciente' : 'Registrar Nuevo Paciente',
             html: formHtml,
-            confirmButtonText: 'Guardar Cambios',
+            width: '800px', // Hacemos el modal un poco más ancho para mejor visualización
+            confirmButtonText: 'Guardar Datos',
             showCancelButton: true,
             cancelButtonText: 'Cancelar',
             didOpen: () => {
-                // Rellenamos el formulario con los datos del paciente
                 const popup = Swal.getPopup();
-                $(popup).find('#numero_documento_original').val(datosPaciente.numero_documento);
-                $(popup).find('#numero_documento').val(datosPaciente.numero_documento);
-                $(popup).find('#tipo_documento').val(datosPaciente.tipo_documento);
-                $(popup).find('#nombre').val(datosPaciente.nombre);
-                $(popup).find('#apellido').val(datosPaciente.apellido);
-                $(popup).find('#fecha_nacimiento').val(datosPaciente.fecha_nacimiento);
-                $(popup).find('#telefono_whatsapp').val(datosPaciente.telefono_whatsapp);
-                $(popup).find('#sexo').val(datosPaciente.sexo);
-                $(popup).find('#estado_civil').val(datosPaciente.estado_civil);
-                $(popup).find('#direccion').val(datosPaciente.direccion);
-                $(popup).find('#profesion').val(datosPaciente.profesion);
-                $(popup).find('#embarazada').val(datosPaciente.embarazada || '0');
                 
-                // Lógica para mostrar/ocultar campos de gestación
-                if (datosPaciente.sexo === 'FEMENINO') {
-                    $(popup).find('#seccion-gestacion-editar').show();
-                }
-                if (datosPaciente.embarazada == '1') {
-                    $(popup).find('#semanas_gestacion').prop('disabled', false).val(datosPaciente.semanas_gestacion);
-                }
-
                 // Listeners para los campos dinámicos (sexo y gestación)
+                // Se deben declarar antes de rellenar los datos para que reaccionen
                 $(popup).on('change', '#sexo', function() {
                     if ($(this).val() === 'FEMENINO') {
                         $(popup).find('#seccion-gestacion-editar').slideDown();
@@ -86,6 +72,37 @@ $(document).ready(function() {
                         semanasInput.val('').prop('disabled', true);
                     }
                 });
+
+                // --- LÓGICA DE RELLENO DE DATOS ---
+                if (datosPaciente) {
+                    // MODO EDICIÓN: Rellenar campos y bloquear ID
+                    $(popup).find('#numero_documento_original').val(datosPaciente.numero_documento);
+                    $(popup).find('#numero_documento').val(datosPaciente.numero_documento).prop('readonly', true);
+                    $(popup).find('#tipo_documento').val(datosPaciente.tipo_documento);
+                    $(popup).find('#nombre').val(datosPaciente.nombre);
+                    $(popup).find('#apellido').val(datosPaciente.apellido);
+                    $(popup).find('#fecha_nacimiento').val(datosPaciente.fecha_nacimiento);
+                    $(popup).find('#telefono_whatsapp').val(datosPaciente.telefono_whatsapp);
+                    $(popup).find('#sexo').val(datosPaciente.sexo);
+                    $(popup).find('#estado_civil').val(datosPaciente.estado_civil);
+                    $(popup).find('#direccion').val(datosPaciente.direccion);
+                    $(popup).find('#profesion').val(datosPaciente.profesion);
+                    $(popup).find('#embarazada').val(datosPaciente.embarazada || '0');
+                    
+                    // Mostrar campos de gestación si aplica
+                    if (datosPaciente.sexo === 'FEMENINO') {
+                        $(popup).find('#seccion-gestacion-editar').show();
+                    }
+                    if (datosPaciente.embarazada == '1') {
+                        $(popup).find('#semanas_gestacion').prop('disabled', false).val(datosPaciente.semanas_gestacion);
+                    }
+                } else {
+                    // MODO CREACIÓN (NUEVO): Limpiar y desbloquear
+                    $(popup).find('#form-editar-paciente')[0].reset(); 
+                    $(popup).find('#numero_documento').prop('readonly', false); // Permitir escribir el documento
+                    $(popup).find('#numero_documento_original').val(''); // Vacío para que el controlador sepa que es INSERT
+                    $(popup).find('#seccion-gestacion-editar').hide();
+                }
             },
             preConfirm: () => {
                 // Validación del formulario antes de enviar
@@ -93,6 +110,7 @@ $(document).ready(function() {
                 let esValido = true;
                 
                 form.querySelectorAll('[required]').forEach(field => {
+                    // Validamos solo si el campo es visible
                     if (field.offsetParent !== null && !field.value) {
                         field.style.borderColor = 'red';
                         esValido = false;
@@ -109,21 +127,19 @@ $(document).ready(function() {
                 return new FormData(form);
             }
         }).then((result) => {
-            // --- INICIO DE LA CORRECCIÓN: Lógica de guardado ---
+            // --- ENVÍO DE DATOS AL SERVIDOR ---
             if (result.isConfirmed) {
                 const formData = result.value;
                 
-                // Enviamos los datos del formulario al controlador por POST
                 fetch('../controllers/paciente_controller.php', {
                     method: 'POST',
                     body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // Mostramos la respuesta real del servidor
                     if (data.success) {
-                        Swal.fire('¡Actualizado!', data.message, 'success');
-                        table.ajax.reload(); // Recargamos la tabla para ver los cambios
+                        Swal.fire('¡Guardado!', data.message, 'success');
+                        table.ajax.reload(); // Recargamos la tabla para ver el nuevo paciente
                     } else {
                         Swal.fire('Error', data.message, 'error');
                     }
@@ -132,21 +148,18 @@ $(document).ready(function() {
                     Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error');
                 });
             }
-            // --- FIN DE LA CORRECCIÓN ---
         });
     }
 
     /**
      * EVENTO CLICK: Botón "Editar" (lápiz amarillo)
-     * Se activa al hacer clic en el botón de editar de cualquier fila.
      */
     $('#tabla-gestionar-pacientes tbody').on('click', '.btn-editar-paciente', function() {
-        var documento = $(this).data('documento'); // Obtenemos el ID (documento)
+        var documento = $(this).data('documento'); 
 
-        // Hacemos la llamada a la API para obtener los datos completos del paciente
         $.get(`../controllers/paciente_controller.php?action=get_paciente_completo&documento=${documento}`, function(response) {
             if (response.status === 'success') {
-                mostrarModalEdicion(response.data);
+                mostrarModalEdicion(response.data); // Llamamos al modal en modo EDICIÓN
             } else {
                 Swal.fire('Error', response.message || 'No se pudieron cargar los datos del paciente.', 'error');
             }

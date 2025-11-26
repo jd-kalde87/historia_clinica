@@ -10,11 +10,11 @@
 function obtenerDetallesConsulta($conexion, $id_historia) {
     // 1. Buscar la información principal de la consulta
     // === INICIO DE LA CORRECCIÓN ===
-    // Se cambió 'JOIN medicos m' por 'JOIN usuarios u'
+    // Se agregó 'p.estado_civil' a la selección
     $sql_consulta = "SELECT 
                         hc.*, 
                         p.nombre, p.apellido, p.tipo_documento, p.numero_documento, 
-                        p.fecha_nacimiento, p.sexo, p.telefono_whatsapp,
+                        p.fecha_nacimiento, p.sexo, p.estado_civil, p.telefono_whatsapp,
                         u.nombre_medico, u.apellido_medico
                      FROM historias_clinicas hc
                      JOIN pacientes p ON hc.paciente_documento = p.numero_documento

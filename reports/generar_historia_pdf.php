@@ -95,13 +95,13 @@ class PDF extends FPDF
                 $this->SetTextColor(133, 100, 4);
                 break;
             case 'danger':
-                $this.SetFillColor(248, 215, 218);
-                $this.SetTextColor(114, 28, 36);
+                $this->SetFillColor(248, 215, 218);
+                $this->SetTextColor(114, 28, 36);
                 break;
             default:
-                $this.SetFillColor(230, 230, 230);
-                $this.SetTextColor(50, 50, 50);
-                break;
+            $this->SetFillColor(230, 230, 230);
+            $this->SetTextColor(50, 50, 50);
+            break;
         }
     }
 

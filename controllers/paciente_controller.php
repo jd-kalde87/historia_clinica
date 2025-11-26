@@ -17,7 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     /**
      * ACCIÓN: OBTENER UN PACIENTE (get_one)
-     * Para el buscador de pacientes (módulo de médico).
      */
     if ($action === 'get_one' && isset($_GET['documento'])) {
         $documento = trim($_GET['documento']);
@@ -60,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     /**
      * ACCIÓN: OBTENER TODOS LOS PACIENTES (get_all)
-     * Para la tabla "Gestionar Pacientes" (el nuevo módulo de edición).
      */
     } elseif ($action === 'get_all') {
         
@@ -77,7 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     /**
      * ACCIÓN: OBTENER DATOS COMPLETOS DE UN PACIENTE (get_paciente_completo)
-     * Para rellenar el formulario de edición.
      */
     } elseif ($action === 'get_paciente_completo' && isset($_GET['documento'])) {
         
@@ -100,7 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     /**
      * ACCIÓN: OBTENER LISTADO (get_all_listado)
-     * Para la tabla "Listado de Pacientes" (la que ya existía).
      */
     } elseif ($action === 'get_all_listado') {
         
@@ -119,62 +115,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         $response = ['data' => $pacientes];
     }
-    // Esta es la llave '}' que cierra el 'if ($_SERVER['REQUEST_METHOD'] === 'GET')'
 
 /**
  * ===============================================
- * MANEJO DE SOLICITUDES POST (Actualizar datos)
+ * MANEJO DE SOLICITUDES POST (Crear y Actualizar datos)
  * ===============================================
  */
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Inicia una transacción para asegurar la integridad de los datos
     $conexion->autocommit(FALSE);
     try {
-        // Recogemos los datos del formulario (igual que en 'historia_controller.php')
+        // Si el campo oculto 'numero_documento_original' está vacío, es un registro NUEVO
+        $es_nuevo = empty($_POST['numero_documento_original']); 
+        
         $embarazada = $_POST['embarazada'] ?? 0;
         $semanas_gestacion = ($embarazada == 1 && !empty($_POST['semanas_gestacion'])) ? $_POST['semanas_gestacion'] : NULL;
-        $numero_documento = $conexion->real_escape_string(trim($_POST['numero_documento_original'])); // El ID original
-        
         $nombre_paciente = mb_convert_case(trim($_POST['nombre']), MB_CASE_TITLE, 'UTF-8');
         $apellido_paciente = mb_convert_case(trim($_POST['apellido']), MB_CASE_TITLE, 'UTF-8');
+        $numero_documento = trim($_POST['numero_documento']); 
 
-        // Preparamos la consulta UPDATE
-        $sql_paciente = "UPDATE pacientes SET tipo_documento=?, nombre=?, apellido=?, fecha_nacimiento=?, sexo=?, estado_civil=?, direccion=?, profesion=?, telefono_whatsapp=?, embarazada=?, semanas_gestacion=? 
-                         WHERE numero_documento=?";
-        
-        $stmt_paciente = $conexion->prepare($sql_paciente);
-        $stmt_paciente->bind_param(
-            "sssssssssiis",
-            $_POST['tipo_documento'],
-            $nombre_paciente,
-            $apellido_paciente,
-            $_POST['fecha_nacimiento'],
-            $_POST['sexo'],
-            $_POST['estado_civil'],
-            $_POST['direccion'],
-            $_POST['profesion'],
-            $_POST['telefono_whatsapp'],
-            $embarazada,
-            $semanas_gestacion,
-            $numero_documento // El WHERE se basa en el documento original
-        );
+        if ($es_nuevo) {
+            // --- MODO INSERTAR (NUEVO) ---
+            // 1. Verificar si ya existe
+            $check = $conexion->prepare("SELECT numero_documento FROM pacientes WHERE numero_documento = ?");
+            $check->bind_param("s", $numero_documento);
+            $check->execute();
+            if ($check->get_result()->num_rows > 0) {
+                throw new Exception("El paciente con este documento ya existe.");
+            }
+            $check->close();
 
-        if (!$stmt_paciente->execute()) {
-            throw new Exception("Error al actualizar los datos: " . $stmt_paciente->error);
+            // 2. Insertar
+            $sql_paciente = "INSERT INTO pacientes (numero_documento, tipo_documento, nombre, apellido, fecha_nacimiento, sexo, estado_civil, direccion, profesion, telefono_whatsapp, embarazada, semanas_gestacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt_paciente = $conexion->prepare($sql_paciente);
+            $stmt_paciente->bind_param("sssssssssiis", $numero_documento, $_POST['tipo_documento'], $nombre_paciente, $apellido_paciente, $_POST['fecha_nacimiento'], $_POST['sexo'], $_POST['estado_civil'], $_POST['direccion'], $_POST['profesion'], $_POST['telefono_whatsapp'], $embarazada, $semanas_gestacion);
+            $msg_exito = "¡Paciente registrado exitosamente!";
+
+        } else {
+            // --- MODO ACTUALIZAR (EDITAR) ---
+            $doc_original = trim($_POST['numero_documento_original']);
+            $sql_paciente = "UPDATE pacientes SET tipo_documento=?, nombre=?, apellido=?, fecha_nacimiento=?, sexo=?, estado_civil=?, direccion=?, profesion=?, telefono_whatsapp=?, embarazada=?, semanas_gestacion=? WHERE numero_documento=?";
+            $stmt_paciente = $conexion->prepare($sql_paciente);
+            $stmt_paciente->bind_param("sssssssssiis", $_POST['tipo_documento'], $nombre_paciente, $apellido_paciente, $_POST['fecha_nacimiento'], $_POST['sexo'], $_POST['estado_civil'], $_POST['direccion'], $_POST['profesion'], $_POST['telefono_whatsapp'], $embarazada, $semanas_gestacion, $doc_original);
+            $msg_exito = "¡Datos actualizados exitosamente!";
         }
 
-        $conexion->commit(); // Si todo va bien, confirma los cambios
-        $response = ['success' => true, 'message' => '¡Datos del paciente actualizados exitosamente!'];
+        if (!$stmt_paciente->execute()) {
+            throw new Exception("Error en BD: " . $stmt_paciente->error);
+        }
+
+        $conexion->commit();
+        $response = ['success' => true, 'message' => $msg_exito];
         $stmt_paciente->close();
 
     } catch (Exception $e) {
-        $conexion->rollback(); // Si algo falla, revierte los cambios
+        $conexion->rollback();
         $response = ['success' => false, 'message' => $e->getMessage()];
     }
 }
-// Esta es la llave '}' que estaba "Unmatched" (sin pareja) en la línea 92.
-// Ahora todo el código está dentro de la estructura GET o POST.
 
 $conexion->close();
 echo json_encode($response);
